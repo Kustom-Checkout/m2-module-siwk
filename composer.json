@@ -3,10 +3,10 @@
     "description": "Sign in with Kustom Magento 2 Extension",
     "type": "magento2-module",
     "license": "Apache-2.0",
-    "version": "1.0.13",
+    "version": "1.0.14",
     "require": {
         "firebase/php-jwt": "^6.9.0",
-        "vaimo/kustom-module-base": "11.0.12",
+        "vaimo/kustom-module-base": "11.0.*",
         "magento/framework": "^103",
         "php": "~7.4.0||~8.1.0||~8.2.0||~8.3.0||~8.4.0"
     },
