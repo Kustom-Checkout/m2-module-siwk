@@ -1,3 +1,7 @@
+1.0.15 / 2026-03-06
+==================
+
+  * KUSTOM-63 Compatibility with PKSA-y2cr-5h3j-g3ys Security Advisory
 
 1.0.13 / 2025-06-03
 ==================
