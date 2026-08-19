@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.1.1 / 2026-08-19
+
+### Breaking changes
+
+* None
+
+### Features / changes
+
+* None
+
+### Fixes
+
+* KUSTOM-89: Updated composer requirements
+
 ## 1.1.0 / 2026-06-26
 
 ### Breaking changes
