@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright © Klarna Bank AB (publ)
+ * Copyright 2025 Kustom AB (Originally developed by Klarna Bank AB)
  *
  * For the full copyright and license information, please view the NOTICE
  * and LICENSE files that were distributed with this source code.
@@ -12,6 +12,7 @@ namespace Klarna\Siwk\Model\Authentication\Account;
 use Magento\Customer\Api\AddressRepositoryInterface;
 use Magento\Customer\Api\Data\AddressInterfaceFactory;
 use Magento\Customer\Api\Data\CustomerInterface;
+use Magento\Directory\Model\RegionFactory;
 
 /**
  * @internal
@@ -26,16 +27,25 @@ class Address
      * @var AddressRepositoryInterface
      */
     private AddressRepositoryInterface $repository;
+    /**
+     * @var RegionFactory
+     */
+    private RegionFactory $regionFactory;
 
     /**
      * @param AddressInterfaceFactory $factory
      * @param AddressRepositoryInterface $repository
+     * @param RegionFactory $regionFactory
      * @codeCoverageIgnore
      */
-    public function __construct(AddressInterfaceFactory $factory, AddressRepositoryInterface $repository)
-    {
+    public function __construct(
+        AddressInterfaceFactory $factory,
+        AddressRepositoryInterface $repository,
+        RegionFactory $regionFactory
+    ) {
         $this->factory = $factory;
         $this->repository = $repository;
+        $this->regionFactory = $regionFactory;
     }
 
     /**
@@ -48,13 +58,14 @@ class Address
     public function add(CustomerInterface $customer, array $data): CustomerInterface
     {
         $billingAddress = $data['billing_address'];
+        $country = (string)($billingAddress['country'] ?? '');
 
         $address = $this->factory->create();
-        $address->setCountryId($billingAddress['country']);
+        $address->setCountryId($country);
         $address->setFirstname($data['given_name']);
         $address->setLastname($data['family_name']);
         $address->setTelephone($data['phone']);
-        $address->setRegionId($billingAddress['region']);
+        $this->applyRegion($address, $billingAddress['region'] ?? null, $country);
         $address->setCity($billingAddress['city']);
         $address->setPostcode($billingAddress['postal_code']);
         $address->setCustomerId($customer->getId());
@@ -68,6 +79,35 @@ class Address
         $this->repository->save($address);
 
         return $customer;
+    }
+
+    /**
+     * Applying the region on the customer address
+     *
+     * Kustom sends the region as a free text value (or not at all for countries without regions). Assigning that raw
+     * value to region_id produces an invalid address which Magento 2.4.8 rejects, so it has to be resolved first.
+     *
+     * @param \Magento\Customer\Api\Data\AddressInterface $address
+     * @param mixed $region
+     * @param string $country
+     */
+    private function applyRegion($address, $region, string $country): void
+    {
+        $region = is_string($region) ? trim($region) : $region;
+
+        if ($region === null || $region === '' || $country === '') {
+            return;
+        }
+
+        $regionModel = $this->regionFactory->create()->loadByCode($region, $country);
+
+        if (!$regionModel->getId()) {
+            $regionModel = $this->regionFactory->create()->loadByName($region, $country);
+        }
+
+        if ($regionModel->getId()) {
+            $address->setRegionId((int)$regionModel->getId());
+        }
     }
 
     /**
